@@ -1,10 +1,25 @@
-# TFU UT3 - Mini Gestor de Proyectos
+# TFU UT4 - Mini Gestor de Proyectos con Patrones de Disponibilidad y Rendimiento
 
 ## Descripción
 Demo de arquitectura distribuida: API REST para gestión de proyectos con tres servicios:
 - **Users Service**
 - **Projects Service**
 - **Tasks Service**
+
+## Patrones seleccionados
+Estos son los patrones que se decidieron utilizar para aplicar a esta 
+Disponibilidad:
+Health Endpoint Monitoring
+Circuit Breaker
+Retry
+Bulkhead
+Rate Limiting
+
+Rendimiento:
+Cache-Aside
+Queue-Based Load Leveling
+Competing Consumers
+
 
 Se utiliza **Spring Boot + Postgres**, desplegado con **Docker Compose**.
 
