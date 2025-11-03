@@ -1,0 +1,71 @@
+version: "3.9"
+
+services:
+  users-service:
+    build: ./users-service
+    container_name: users-service
+    ports:
+      - "8081:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db_users:5432/usersdb
+      - SPRING_DATASOURCE_USERNAME=user
+      - SPRING_DATASOURCE_PASSWORD=pass
+    depends_on:
+      - db_users
+
+  projects-service:
+    build: ./projects-service
+    container_name: projects-service
+    ports:
+      - "8082:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db_projects:5432/projectsdb
+      - SPRING_DATASOURCE_USERNAME=user
+      - SPRING_DATASOURCE_PASSWORD=pass
+    depends_on:
+      - db_projects
+
+  tasks-service:
+    build: ./tasks-service
+    container_name: tasks-service
+    ports:
+      - "8083:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db_tasks:5432/tasksdb
+      - SPRING_DATASOURCE_USERNAME=user
+      - SPRING_DATASOURCE_PASSWORD=pass
+    depends_on:
+      - db_tasks
+
+  db_users:
+    image: postgres:15
+    container_name: db_users
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: usersdb
+    ports:
+      - "5433:5432"
+
+  db_projects:
+    image: postgres:15
+    container_name: db_projects
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: projectsdb
+    ports:
+      - "5434:5432"
+
+  db_tasks:
+    image: postgres:15
+    container_name: db_tasks
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: tasksdb
+    ports:
+      - "5435:5432"
