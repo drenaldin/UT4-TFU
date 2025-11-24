@@ -1,42 +1,76 @@
 version: "3.9"
 
 services:
+  # --- NUEVO: API Gateway ---
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080" # Punto de entrada único
+    depends_on:
+      - users-service
+      - projects-service
+      - tasks-service
+      - redis
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  # --- Servicios Backend (Puertos internos modificados para evitar colisión si es necesario) ---
   users-service:
     build: ./users-service
     container_name: users-service
-    ports:
-      - "8081:8080"
+    # No es estrictamente necesario exponer puertos si usas la red interna de docker,
+    # pero útil para debug. El gateway usa http://users-service:8080 (puerto interno del contenedor)
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db_users:5432/usersdb
       - SPRING_DATASOURCE_USERNAME=user
       - SPRING_DATASOURCE_PASSWORD=pass
     depends_on:
-      - db_users
-
+      db_users:
+        condition: service_started
+    healthcheck: # Health Endpoint Monitoring
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
   projects-service:
     build: ./projects-service
     container_name: projects-service
-    ports:
-      - "8082:8080"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db_projects:5432/projectsdb
       - SPRING_DATASOURCE_USERNAME=user
       - SPRING_DATASOURCE_PASSWORD=pass
     depends_on:
-      - db_projects
+      db_projects:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   tasks-service:
     build: ./tasks-service
     container_name: tasks-service
-    ports:
-      - "8083:8080"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db_tasks:5432/tasksdb
       - SPRING_DATASOURCE_USERNAME=user
       - SPRING_DATASOURCE_PASSWORD=pass
     depends_on:
-      - db_tasks
+      db_tasks:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
+  # Bases de datos (sin cambios, solo asegurar nombres)
   db_users:
     image: postgres:15
     container_name: db_users
@@ -45,8 +79,6 @@ services:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: pass
       POSTGRES_DB: usersdb
-    ports:
-      - "5433:5432"
 
   db_projects:
     image: postgres:15
@@ -56,8 +88,6 @@ services:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: pass
       POSTGRES_DB: projectsdb
-    ports:
-      - "5434:5432"
 
   db_tasks:
     image: postgres:15
@@ -67,5 +97,3 @@ services:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: pass
       POSTGRES_DB: tasksdb
-    ports:
-      - "5435:5432"

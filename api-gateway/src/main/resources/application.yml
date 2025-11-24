@@ -1,0 +1,82 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  # --- CONFIGURACIÓN EXPLÍCITA DE REDIS ---
+  data:
+    redis:
+      host: redis
+      port: 6379
+  # ----------------------------------------
+  cloud:
+    gateway:
+      routes:
+        - id: users-service
+          uri: http://users-service:8080
+          predicates:
+            - Path=/users/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: usersCircuitBreaker
+                fallbackUri: forward:/fallback/users
+            - name: Retry
+              args:
+                retries: 3
+                methods: GET
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+                key-resolver: "#{@userKeyResolver}"
+
+        - id: projects-service
+          uri: http://projects-service:8080
+          predicates:
+            - Path=/projects/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: projectsCircuitBreaker
+                fallbackUri: forward:/fallback/projects
+            - name: Retry
+              args:
+                retries: 3
+                methods: GET,POST
+
+        - id: tasks-service
+          uri: http://tasks-service:8080
+          predicates:
+            - Path=/tasks/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: tasksCircuitBreaker
+                fallbackUri: forward:/fallback/tasks
+
+management:
+  endpoint:
+    health:
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: health, metrics, circuitbreakers
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      usersCircuitBreaker:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+      projectsCircuitBreaker:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+      tasksCircuitBreaker:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
